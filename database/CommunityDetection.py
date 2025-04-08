@@ -1,4 +1,5 @@
 from database.Neo4jConnection import Neo4jConnection
+
 """
     Класс содержащий query для вычисления кластеризации сети 
 """
@@ -16,7 +17,7 @@ class CommunityDetection:
         return self.__write_communities(graph_name)
 
     def __make_graph(self, graph_name, node_name, relationship_name, relationship_weight_property):
-        query = f'''
+        query = f"""
             CALL gds.graph.project(
             '{graph_name}',
             '{node_name}',
@@ -27,11 +28,11 @@ class CommunityDetection:
                 }}
             }}
         )
-        '''
+        """
         self.connection.run(query)
 
     def __detect_communities(self, graph_name, relationship_weight_property):
-        query = f'''
+        query = f"""
             CALL gds.{self.algorithm_name}.stream(
                 '{graph_name}',
                 {{
@@ -41,11 +42,11 @@ class CommunityDetection:
             YIELD nodeId, communityId
             RETURN communityId, COUNT(DISTINCT nodeId) AS members
             ORDER BY members DESC
-        '''
+        """
         return self.connection.run(query)
 
     def __write_communities(self, graph_name):
-        query = f'''
+        query = f"""
             CALL gds.{self.algorithm_name}.write(
                 '{graph_name}', 
                 {{
@@ -53,7 +54,7 @@ class CommunityDetection:
                 }}
             ) 
             YIELD communityCount, modularity, modularities
-        '''
+        """
         return self.connection.execute_query(query).records[0][2]
 
 

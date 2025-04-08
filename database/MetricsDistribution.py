@@ -2,10 +2,10 @@ from abc import abstractmethod
 
 from database.GraphDbManager import GraphDBManager
 from database.Neo4jConnection import Neo4jConnection
+
 """
     Класс содержащий query для вычисления распределения метрик сети 
 """
-
 
 
 class MetricsDistributionNode:
@@ -20,33 +20,35 @@ class MetricsDistributionNode:
     def metrics_calculate(self):
         pass
 
-
-    def calculate_distribution(self, needLog = False):
-        query = f'''
+    def calculate_distribution(self, needLog=False):
+        query = f"""
             MATCH (first_node:{self.node_name})
             WITH first_node, {self.metrics_calculate} AS Metric
             RETURN first_node.{self.node_identity} AS NodeIdentity, Metric
             ORDER BY Metric DESC
-        '''
+        """
         return self.connection.execute_query(query, needLog).records
+
 
 class DegreeDistribution(MetricsDistributionNode):
     def metrics_calculate(self):
-        return 'count(rels)'
+        return "count(rels)"
 
-    def calculate_distribution(self, needLog = False):
-        query = f'''
+    def calculate_distribution(self, needLog=False):
+        query = f"""
             MATCH (first_node:{self.node_name})-[rels:{self.rels_name}]-(second_node:{self.node_name})
             WITH first_node, {self.metrics_calculate} AS Metric
             RETURN first_node.{self.node_identity} AS NodeIdentity, Metric
             ORDER BY Metric DESC
-        '''
+        """
         return self.connection.execute_query(query, needLog).records
+
 
 class PageRankDistribution(MetricsDistributionNode):
     def metrics_calculate(self):
-        return 'first_node.pageRank'
+        return "first_node.pageRank"
+
 
 class BetweennessDistribution(MetricsDistributionNode):
     def metrics_calculate(self):
-        return 'first_node.betweenness'
+        return "first_node.betweenness"

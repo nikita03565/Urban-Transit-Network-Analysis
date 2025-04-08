@@ -7,17 +7,14 @@ import plotly.graph_objects as go
 
 from context.PrintGraphAnalisContext import PrintGraphAnalisContext
 from context.MetricCalculationContext import MetricCalculationContext
+
 """
     Класс отрисовывающий графики по вычисленным метрикам 
 """
 
 
 class Printer:
-    def __init__(
-            self,
-            data,
-            metric_calculation_context: MetricCalculationContext
-    ):
+    def __init__(self, data, metric_calculation_context: MetricCalculationContext):
         self.data = data
         self.metric_calculation_context = metric_calculation_context
 
@@ -27,13 +24,7 @@ class Printer:
         for heat_map_metric in print_graph_analis_context.heat_map_metrics_list:
             self.plot_heatmap_on_map(heat_map_metric, print_graph_analis_context.mesh_size)
 
-
-    def plot_histogram(
-            self,
-            metric: Enum,
-            title="Distribution of metric_value ",
-            ylabel="Frequency"
-    ):
+    def plot_histogram(self, metric: Enum, title="Distribution of metric_value ", ylabel="Frequency"):
         metric_name = str(metric.value)
         title += metric_name
         metric_values = self.data[metric_name + "_value"]
@@ -44,21 +35,13 @@ class Printer:
             df,
             x="metric_value: " + metric_name,
             title=title,
-            labels={
-                "metric_value ": metric_name,
-                "count": ylabel
-            },
-            marginal="rug"
+            labels={"metric_value ": metric_name, "count": ylabel},
+            marginal="rug",
         )
 
         fig.show()
 
-    def plot_heatmap_on_map(
-            self,
-            metric: Enum,
-            resolution,
-            colorscale='Viridis'
-    ):
+    def plot_heatmap_on_map(self, metric: Enum, resolution, colorscale="Viridis"):
         latitudes = []
         longitudes = []
         metric_values = []
@@ -74,15 +57,11 @@ class Printer:
             except ValueError:
                 print(f"Skipping invalid identity")
 
-        df = pd.DataFrame({
-            "latitude": latitudes,
-            "longitude": longitudes,
-            "metric_value": metric_values
-        })
-        df['metric_value'] = df['metric_value'].fillna(0)
+        df = pd.DataFrame({"latitude": latitudes, "longitude": longitudes, "metric_value": metric_values})
+        df["metric_value"] = df["metric_value"].fillna(0)
 
-        lat_min, lat_max = df['latitude'].min(), df['latitude'].max()
-        lon_min, lon_max = df['longitude'].min(), df['longitude'].max()
+        lat_min, lat_max = df["latitude"].min(), df["latitude"].max()
+        lon_min, lon_max = df["longitude"].min(), df["longitude"].max()
 
         lon_edges = np.linspace(lon_min, lon_max, resolution + 1)
         lat_edges = np.linspace(lat_min, lat_max, resolution + 1)
@@ -96,10 +75,10 @@ class Printer:
         for i in range(resolution):
             for j in range(resolution):
                 mask = (
-                        (df['longitude'] >= lon_edges[i]) &
-                        (df['longitude'] < lon_edges[i + 1]) &
-                        (df['latitude'] >= lat_edges[j]) &
-                        (df['latitude'] < lat_edges[j + 1])
+                    (df["longitude"] >= lon_edges[i])
+                    & (df["longitude"] < lon_edges[i + 1])
+                    & (df["latitude"] >= lat_edges[j])
+                    & (df["latitude"] < lat_edges[j + 1])
                 )
 
                 cell_points = df[mask]
@@ -110,14 +89,16 @@ class Printer:
 
         fig = go.Figure()
 
-        fig.add_trace(go.Heatmap(
-            z=avg_values,
-            x=lon_centers,
-            y=lat_centers,
-            colorscale=colorscale,
-            colorbar=dict(title='Среднее значение метрики ' + metric_name),
-            hoverinfo='x+y+z',
-            name='Средние значения ' + metric_name,
-        ))
+        fig.add_trace(
+            go.Heatmap(
+                z=avg_values,
+                x=lon_centers,
+                y=lat_centers,
+                colorscale=colorscale,
+                colorbar=dict(title="Среднее значение метрики " + metric_name),
+                hoverinfo="x+y+z",
+                name="Средние значения " + metric_name,
+            )
+        )
 
         fig.show()

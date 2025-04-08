@@ -1,17 +1,14 @@
 from context.MetricCalculationContext import MetricCalculationContext
 from database.GraphDbManager import GraphDBManager
 from database.MetricsDistribution import DegreeDistribution, BetweennessDistribution, PageRankDistribution
+
 """
     Класс вычисляющий метрики сетей(берёт уже записанные метрики из бд или вычисляет не сложные)
 """
 
 
 class MetricDataCalculator:
-    def __init__(
-            self,
-            metric_calculation_context: MetricCalculationContext,
-            db_manager: GraphDBManager
-    ):
+    def __init__(self, metric_calculation_context: MetricCalculationContext, db_manager: GraphDBManager):
         self.metric_calculation_context = metric_calculation_context
         self.db_manager = db_manager
         self.degree_distibution_calculator = None
@@ -28,7 +25,7 @@ class MetricDataCalculator:
         degree_distribution = {}
         if self.degree_distibution_calculator is not None:
             degree_distirbution_data = self.degree_distibution_calculator.calculate_distribution()
-            degree_distribution = {"degree_value": [item[1] for item in degree_distirbution_data] }
+            degree_distribution = {"degree_value": [item[1] for item in degree_distirbution_data]}
 
         betweenessens_distibution = {}
         if self.betweenessens_distribution_calculator is not None:

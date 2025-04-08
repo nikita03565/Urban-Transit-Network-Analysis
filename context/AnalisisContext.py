@@ -8,10 +8,10 @@ from context.GraphAnalisContext import GraphAnalisContext
 
 class AnalisContext:
     def __init__(
-            self,
-            ru_city_name: str = None,
-            common_metric_calculation_context: MetricCalculationContext = MetricCalculationContext(),
-            graph_analis_context: [GraphAnalisContext] = None
+        self,
+        ru_city_name: str = None,
+        common_metric_calculation_context: MetricCalculationContext = MetricCalculationContext(),
+        graph_analis_context: [GraphAnalisContext] = None,
     ):
         if graph_analis_context is None:
             graph_analis_context = [GraphAnalisContext()]

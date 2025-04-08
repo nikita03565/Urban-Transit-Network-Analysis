@@ -9,13 +9,13 @@ from enums.GraphTypes import GraphTypes
 
 class GraphAnalisContext:
     def __init__(
-            self,
-            metric_calculation_context: MetricCalculationContext = MetricCalculationContext(),
-            print_graph_analis_context: PrintGraphAnalisContext = PrintGraphAnalisContext(),
-            new_graph_name: str = None,
-            graph_type: GraphTypes = GraphTypes.ROAD_GRAPH,
-            need_prepare_data: bool = True,
-            need_calculate_and_print_data: bool = True
+        self,
+        metric_calculation_context: MetricCalculationContext = MetricCalculationContext(),
+        print_graph_analis_context: PrintGraphAnalisContext = PrintGraphAnalisContext(),
+        new_graph_name: str = None,
+        graph_type: GraphTypes = GraphTypes.ROAD_GRAPH,
+        need_prepare_data: bool = True,
+        need_calculate_and_print_data: bool = True,
     ):
         self.metric_calculation_context = metric_calculation_context
         self.new_graph_name = new_graph_name

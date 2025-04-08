@@ -4,6 +4,7 @@ from context.AnalisisContext import AnalisContext
 from data.calculator.MetricDataCalculator import MetricDataCalculator
 from data.preparer.MetricDataPreparer import MetricDataPreparer
 from graphics.Printer import Printer
+
 """
     Класс ответственный за анализ сетей
 """
@@ -25,24 +26,17 @@ class AnalisisManager:
 
             prepare_result = None
             if graph_analis_context.need_prepare_data:
-                new_graph_name = graph_analis_context.new_graph_name if graph_analis_context.new_graph_name is not None \
+                new_graph_name = (
+                    graph_analis_context.new_graph_name
+                    if graph_analis_context.new_graph_name is not None
                     else "some" + str(random.random())
-                metric_data_preparer = MetricDataPreparer(
-                    metric_context,
-                    new_graph_name,
-                    db_manager
                 )
+                metric_data_preparer = MetricDataPreparer(metric_context, new_graph_name, db_manager)
                 prepare_result = metric_data_preparer.prepare_metrics()
 
             if graph_analis_context.need_calculate_and_print_data:
-                metric_data_calculator = MetricDataCalculator(
-                    metric_context,
-                    db_manager
-                )
+                metric_data_calculator = MetricDataCalculator(metric_context, db_manager)
                 data = metric_data_calculator.calculate_data(prepare_result)
 
-                printer = Printer(
-                    data,
-                    metric_context
-                )
+                printer = Printer(data, metric_context)
                 printer.print_graphics(graph_analis_context.print_graph_analis_context)

@@ -16,7 +16,7 @@ class MetricsCalculate:
         self.__metric_calculate(graph_name, relationship_weight_property)
 
     def __make_graph(self, graph_name, node_name, relationship_name, relationship_weight_property):
-        query = f'''
+        query = f"""
             CALL gds.graph.project(
             '{graph_name}',
             '{node_name}',
@@ -27,11 +27,11 @@ class MetricsCalculate:
                 }}
             }}
         )
-        '''
+        """
         self.connection.run(query)
 
     def __metric_calculate(self, graph_name, weight_property):
-        query = f'''
+        query = f"""
             CALL gds.{self.metric_name}.write(
                 '{graph_name}',
                 {{
@@ -39,7 +39,7 @@ class MetricsCalculate:
                 writeProperty: '{self.write_property}'
                 }}
             )
-        '''
+        """
         return self.connection.run(query)
 
 

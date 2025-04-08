@@ -8,11 +8,12 @@ from abc import abstractmethod
 
 import requests
 from bs4 import BeautifulSoup
+
 """
     Класс занимающийся парсингом данных с сайта https://kudikina.ru
 """
 
-cache_file = '../cache/city_urls.json'
+cache_file = "../cache/city_urls.json"
 cache_expire_days = 30
 site_url = "https://kudikina.ru"
 map_url = "/map"
@@ -58,7 +59,7 @@ class AbstractTransportGraphParser:
             print("Cities url are saved in cache.")
         city_url = cities_url.get(self.city_name)
         if city_url is None:
-            print('No such city in parsed data')
+            print("No such city in parsed data")
         return city_url
 
     def __add_stops_and_routes(self, route_name, route_url):
@@ -80,11 +81,7 @@ class AbstractTransportGraphParser:
 
             if previous_transport_stop_name is not None:
                 self.__add_route(
-                    previous_transport_stop_name,
-                    transport_stop,
-                    previous_time_point,
-                    time_point,
-                    route_name
+                    previous_transport_stop_name, transport_stop, previous_time_point, time_point, route_name
                 )
 
             last_coordinate = coordinate
@@ -110,7 +107,7 @@ class AbstractTransportGraphParser:
                 "roteList": [route_name],
                 "xCoordinate": coordinate.x,
                 "yCoordinate": coordinate.y,
-                "isCoordinateApproximate": coordinate.is_approximate
+                "isCoordinateApproximate": coordinate.is_approximate,
             }
             self.nodes[transport_stop_name] = transport_stop
         return transport_stop
@@ -123,20 +120,21 @@ class AbstractTransportGraphParser:
             if self.are_stops_same(old_coordinate, coordinate):
                 is_new_stop = False
                 break
-            else:
-                transport_stop_name = self.increment_suffix(transport_stop_name)
+            transport_stop_name = self.increment_suffix(transport_stop_name)
 
         return transport_stop_name, is_new_stop
 
     def __add_route(self, start_stop, end_stop, start_time, end_time, route_name):
         if start_stop is not None and end_stop is not None:
-            self.relationships.append({"startStop": start_stop["name"],
-                                       "endStop": end_stop["name"],
-                                       "name": start_stop["name"] + " -> " + end_stop[
-                                           "name"] + "; route_name: " + route_name,
-                                       "route": route_name,
-                                       "duration": self.calculate_duration(start_time, end_time)
-                                       })
+            self.relationships.append(
+                {
+                    "startStop": start_stop["name"],
+                    "endStop": end_stop["name"],
+                    "name": start_stop["name"] + " -> " + end_stop["name"] + "; route_name: " + route_name,
+                    "route": route_name,
+                    "duration": self.calculate_duration(start_time, end_time),
+                }
+            )
 
     def get_all_routes_info(self):
         if self.city_url is None:
@@ -163,22 +161,21 @@ class AbstractTransportGraphParser:
         (timetable2, successes_parse2) = self.get_one_direction_timetable(route_url, timetable_backward_url)
         if successes_parse1 and successes_parse2:
             return timetable1 + timetable2, True
-        else:
-            return None, False
+        return None, False
 
     def get_one_direction_timetable(self, route_url, timetable_url):
         full_url = site_url + route_url + timetable_url
 
         response = requests.get(full_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
         stop_times = []
-        for stop_div in soup.find_all('div', class_='bus-stop'):
-            name = stop_div.find('a').text.strip()
-            time_point = stop_div.find_next_sibling('div', class_='col-xs-12').find('span')
+        for stop_div in soup.find_all("div", class_="bus-stop"):
+            name = stop_div.find("a").text.strip()
+            time_point = stop_div.find_next_sibling("div", class_="col-xs-12").find("span")
             if time_point is not None:
                 parsed_time_point = time_point.text.strip()
-                if parsed_time_point[len(parsed_time_point) - 1] == 'K':
+                if parsed_time_point[len(parsed_time_point) - 1] == "K":
                     parsed_time_point = parsed_time_point[:-1]
             else:
                 return None, False
@@ -189,25 +186,27 @@ class AbstractTransportGraphParser:
     def get_stop_coordinates(self, route_url):
         full_url = site_url + route_url + map_url
         response = requests.get(full_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        script_tags = soup.find_all('script', type="text/javascript")
+        script_tags = soup.find_all("script", type="text/javascript")
         script_tag = None
 
         for tag in script_tags:
-            if 'drawMap' in tag.text:
+            if "drawMap" in tag.text:
                 script_tag = tag
                 break
 
-        if script_tag:
-            script_text = script_tag.text
-            coordinates = self.extract_coordinates(script_text)
-
-            return coordinates
-        else:
+        if script_tag is None:
+            print("No script tag found with drawMap")
             return {}
 
+        script_text = script_tag.text
+        coordinates = self.extract_coordinates(script_text)
+
+        return coordinates
+
     def extract_coordinates(self, script_text):
+        # TODO: that json which we can parse..
         matches = re.findall(r'{"name":\s*"(.*?)",\s*"lat":\s*(-?\d+\.?\d*),?\s*"long":\s*(-?\d+\.?\d*)?}', script_text)
 
         coordinates = {}
@@ -225,46 +224,46 @@ class AbstractTransportGraphParser:
             modification_time = os.path.getmtime(cache_file)
             current_time = datetime.datetime.now()
             if (current_time - datetime.datetime.fromtimestamp(modification_time)).days <= cache_expire_days:
-                with open(cache_file, 'r') as file:
+                with open(cache_file, "r") as file:
                     return json.load(file)
         return {}
 
     def save_cache(self, cache_file, cache_data):
-        with open(cache_file, 'w') as file:
+        with open(cache_file, "w") as file:
             json.dump(cache_data, file)
 
     def parse_all_city_urls(self):
         url = "https://kudikina.ru/"
         response = requests.get(url)
-        time.sleep(2)
+
         html_content = response.text
-        soup = BeautifulSoup(html_content, 'html.parser')
+        soup = BeautifulSoup(html_content, "html.parser")
         cities = {}
 
-        for li in soup.find_all('ul', class_='list-unstyled cities block-regions'):
-            for region in li.find_all('a'):
-                region_name = region.find('span', class_='city-name').text.strip()
-                region_href = region['href']
+        for li in soup.find_all("ul", class_="list-unstyled cities block-regions"):
+            for region in li.find_all("a"):
+                region_name = region.find("span", class_="city-name").text.strip()
+                region_href = region["href"]
                 region_response = requests.get(url[:-1] + region_href)
                 region_html_content = region_response.text
-                region_soup = BeautifulSoup(region_html_content, 'html.parser')
-                city_list = region_soup.find_all('ul', class_='list-unstyled cities')
-                time.sleep(2)
-                if len(city_list) == 0:
+                region_soup = BeautifulSoup(region_html_content, "html.parser")
+                city_list = region_soup.find_all("ul", class_="list-unstyled cities")
+
+                if not city_list:
                     cities[region_name] = region_href
-                    print(region_href + ' Was parsed')
-                else:
-                    region_cities = city_list[0].find_all('a')
-                    for city in region_cities:
-                        city_name = city.find('span', class_='city-name').text.strip()
-                        city_href = city['href']
-                        cities[city_name] = city_href
-                        print(city_href + ' Was parsed')
+                    print(region_href + " Was parsed")
+                    continue
+                region_cities = city_list[0].find_all("a")
+                for city in region_cities:
+                    city_name = city.find("span", class_="city-name").text.strip()
+                    city_href = city["href"]
+                    cities[city_name] = city_href
+                    print(city_href + " Was parsed")
         return cities
 
     def calculate_duration(self, start_stop, end_stop):
-        start_hour, start_minute = map(int, start_stop.split(':'))
-        end_hour, end_minute = map(int, end_stop.split(':'))
+        start_hour, start_minute = map(int, start_stop.split(":"))
+        end_hour, end_minute = map(int, end_stop.split(":"))
         return abs((end_hour * 60 + end_minute) - (start_hour * 60 + start_minute))
 
     def are_stops_same(self, coord1, coord2, tolerance=0.005):
@@ -276,10 +275,10 @@ class AbstractTransportGraphParser:
             index = len(name) - 1
             while index >= 0 and name[index].isdigit():
                 index -= 1
-            number = int(name[index + 1:]) + 1
+            number = int(name[index + 1 :]) + 1
             return f"{name[:index + 1]}{number}"
-        else:
-            return f"{name} 1"
+
+        return f"{name} 1"
 
     @abstractmethod
     def get_transport_class(self):

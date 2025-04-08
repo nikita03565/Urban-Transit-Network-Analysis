@@ -46,7 +46,8 @@ class Neo4jConnection:
 
         try:
             result = self.__driver.execute_query(query)
-            if needLog: print(list(result))
+            if needLog:
+                print(list(result))
             return result
         except Exception as e:
             print("Query failed:", e)

@@ -1,5 +1,6 @@
 from enum import Enum
 import database.GraphDbManager as GraphDbManager
+
 """
     Список типов сетей с соответсвующими конструкторами для классов работающими с бд
 """

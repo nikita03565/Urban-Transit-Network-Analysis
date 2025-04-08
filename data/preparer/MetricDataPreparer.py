@@ -2,18 +2,14 @@ from context.MetricCalculationContext import MetricCalculationContext
 from database.CommunityDetection import Leiden, Louvain
 from database.GraphDbManager import GraphDBManager
 from database.MetricsCalculate import Betweenness, PageRank
+
 """
     Класс записывающий метрики сетей в бд
 """
 
 
 class MetricDataPreparer:
-    def __init__(
-            self,
-            metric_calculation_context: MetricCalculationContext,
-            graph_name,
-            db_manager: GraphDBManager
-    ):
+    def __init__(self, metric_calculation_context: MetricCalculationContext, graph_name, db_manager: GraphDBManager):
         self.leiden_calculator = None
         self.louvain_calculator = None
         self.betweenessens_calculator = None
@@ -46,7 +42,7 @@ class MetricDataPreparer:
             self.graph_name,
             self.db_manager.weight,
             self.db_manager.get_main_node_name(),
-            self.db_manager.get_main_rels_name()
+            self.db_manager.get_main_rels_name(),
         )
         print(f"LeidenAlgorithm Community detection for graph {self.graph_name} completed.")
         return result
@@ -56,7 +52,7 @@ class MetricDataPreparer:
             self.graph_name,
             self.db_manager.weight,
             self.db_manager.get_main_node_name(),
-            self.db_manager.get_main_rels_name()
+            self.db_manager.get_main_rels_name(),
         )
         print(f"LovainAlgorithm Community detection for graph {self.graph_name} completed.")
         return result
@@ -66,7 +62,7 @@ class MetricDataPreparer:
             self.graph_name,
             self.db_manager.weight,
             self.db_manager.get_main_node_name(),
-            self.db_manager.get_main_rels_name()
+            self.db_manager.get_main_rels_name(),
         )
         print(f"betweenessens metric calculated for graph {self.graph_name}.")
 
@@ -75,7 +71,6 @@ class MetricDataPreparer:
             self.graph_name,
             self.db_manager.weight,
             self.db_manager.get_main_node_name(),
-            self.db_manager.get_main_rels_name()
+            self.db_manager.get_main_rels_name(),
         )
         print(f"pageRank metric calculated for graph {self.graph_name}.")
-
