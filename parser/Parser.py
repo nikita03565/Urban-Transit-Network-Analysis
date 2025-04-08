@@ -24,6 +24,11 @@ city_avg_x_coordinate = 60.0
 city_avg_y_coordinate = 30.0
 request_pause_sec = 2
 
+# TODO raise for non 200
+# add proper headers
+# randomize/extend sleep
+# save intermediate results 
+# continue from where left offf 
 
 class AbstractTransportGraphParser:
 
@@ -229,6 +234,7 @@ class AbstractTransportGraphParser:
         return {}
 
     def save_cache(self, cache_file, cache_data):
+        os.makedirs(os.path.dirname(cache_file), exist_ok=True)
         with open(cache_file, "w") as file:
             json.dump(cache_data, file)
 
