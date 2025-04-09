@@ -10,6 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 import hashlib
 import os
+
 """
     Класс занимающийся парсингом данных с сайта https://kudikina.ru
 """
@@ -25,11 +26,6 @@ timetable_backward_url = "/B"
 city_avg_x_coordinate = 60.0
 city_avg_y_coordinate = 30.0
 request_pause_sec = 2.5
-
-
-
-
-
 
 
 class AbstractTransportGraphParser:
@@ -62,7 +58,7 @@ class AbstractTransportGraphParser:
                 with open(cache_file, "r") as file:
                     print(f"read {url} from cache")
                     return file.read()
-                
+
         print(f"requesting {url} ...")
         time.sleep(request_pause_sec)
         response = self.session.get(url)
@@ -71,7 +67,6 @@ class AbstractTransportGraphParser:
         with open(cache_file, "w") as file:
             file.write(response.text)
         return response.text
-        
 
     def __init__(self, city_name):
         self.city_name = city_name
@@ -191,7 +186,7 @@ class AbstractTransportGraphParser:
         full_url = site_url + self.city_url + self.transport_url
 
         response_html = self.__get_page(full_url)
-        
+
         soup = BeautifulSoup(response_html, "html.parser")
 
         transport_list = []
@@ -309,9 +304,28 @@ class AbstractTransportGraphParser:
         return cities
 
     def calculate_duration(self, start_stop, end_stop):
-        start_hour, start_minute = map(int, start_stop.split(":"))
-        end_hour, end_minute = map(int, end_stop.split(":"))
-        return abs((end_hour * 60 + end_minute) - (start_hour * 60 + start_minute))
+        # TODO: test with 23:55 and :05
+        start_time = self.parse_time(start_stop)
+        end_time = self.parse_time(end_stop)
+
+        if start_time is None or end_time is None:
+            return None
+
+        duration = end_time - start_time
+        return duration.total_seconds()
+
+    def parse_time(self, time_str):
+        if not time_str:
+            return None
+
+        time_str = time_str.replace(" ", "")
+        if len(time_str) == 3 and time_str[0] == ":":
+            # e.g. ":30"
+            time_str = "00" + time_str
+        try:
+            return datetime.datetime.strptime(time_str, "%H:%M")
+        except ValueError:
+            return None
 
     def are_stops_same(self, coord1, coord2, tolerance=0.005):
         distance = math.dist(coord1.get_xy(), coord2.get_xy())
