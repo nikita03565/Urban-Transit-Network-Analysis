@@ -8,12 +8,14 @@ from abc import abstractmethod
 
 import requests
 from bs4 import BeautifulSoup
-
+import hashlib
+import os
 """
     Класс занимающийся парсингом данных с сайта https://kudikina.ru
 """
 
-cache_file = "../cache/city_urls.json"
+cache_dir = "cache"
+city_urls_file = os.path.join(cache_dir, "city_urls.json")
 cache_expire_days = 30
 site_url = "https://kudikina.ru"
 map_url = "/map"
@@ -22,15 +24,54 @@ timetable_backward_url = "/B"
 # TODO: need to update according to city coordinates
 city_avg_x_coordinate = 60.0
 city_avg_y_coordinate = 30.0
-request_pause_sec = 2
+request_pause_sec = 2.5
 
-# TODO raise for non 200
-# add proper headers
-# randomize/extend sleep
-# save intermediate results 
-# continue from where left offf 
+
+
+
+
+
 
 class AbstractTransportGraphParser:
+
+    __headers = {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "accept-language": "en-US,en-GB;q=0.9,en;q=0.8",
+        "dnt": "1",
+        "priority": "u=0, i",
+        "sec-ch-ua": '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "none",
+        "sec-fetch-user": "?1",
+        "upgrade-insecure-requests": "1",
+        # might want to use fake user agent
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+        "Cookie": "",
+    }
+
+    def __get_page(self, url):
+        hash_url = hashlib.md5(url.encode()).hexdigest()
+        cache_file = os.path.join(cache_dir, f"{hash_url}.html")
+        if os.path.exists(cache_file):
+            modification_time = os.path.getmtime(cache_file)
+            current_time = datetime.datetime.now()
+            if (current_time - datetime.datetime.fromtimestamp(modification_time)).days <= cache_expire_days:
+                with open(cache_file, "r") as file:
+                    print(f"read {url} from cache")
+                    return file.read()
+                
+        print(f"requesting {url} ...")
+        time.sleep(request_pause_sec)
+        response = self.session.get(url)
+        response.raise_for_status()
+
+        with open(cache_file, "w") as file:
+            file.write(response.text)
+        return response.text
+        
 
     def __init__(self, city_name):
         self.city_name = city_name
@@ -39,6 +80,11 @@ class AbstractTransportGraphParser:
         self.relationships = []
         self.transport_url = self.get_transport_url()
         self.transport_class = self.get_transport_class()
+        self.session = requests.Session()
+        self.session.headers.update(self.__get_headers())
+
+    def __get_headers(self):
+        return self.__headers
 
     def parse(self):
         if self.city_url is None:
@@ -50,17 +96,14 @@ class AbstractTransportGraphParser:
 
             self.__add_stops_and_routes(route_name, route_url)
 
-            print(route_url)
-            time.sleep(request_pause_sec)
-
         return self.nodes, self.relationships
 
     def __get_city_url(self):
-        cities_url = self.load_cache(cache_file)
+        cities_url = self.load_cache(city_urls_file)
         if not cities_url:
             print("Cities url cache is expired or empty, lets fill it.")
             cities_url = self.parse_all_city_urls()
-            self.save_cache(cache_file, cities_url)
+            self.save_cache(city_urls_file, cities_url)
             print("Cities url are saved in cache.")
         city_url = cities_url.get(self.city_name)
         if city_url is None:
@@ -68,8 +111,8 @@ class AbstractTransportGraphParser:
         return city_url
 
     def __add_stops_and_routes(self, route_name, route_url):
-        (timetable, successes_parse) = self.get_timetable(route_url)
-        if successes_parse is False:
+        timetable, successes_parse = self.get_timetable(route_url)
+        if not successes_parse:
             return
 
         stop_coordinates = self.get_stop_coordinates(route_url)
@@ -147,9 +190,9 @@ class AbstractTransportGraphParser:
 
         full_url = site_url + self.city_url + self.transport_url
 
-        response = requests.get(full_url)
-        html = response.text
-        soup = BeautifulSoup(html, "html.parser")
+        response_html = self.__get_page(full_url)
+        
+        soup = BeautifulSoup(response_html, "html.parser")
 
         transport_list = []
 
@@ -171,8 +214,8 @@ class AbstractTransportGraphParser:
     def get_one_direction_timetable(self, route_url, timetable_url):
         full_url = site_url + route_url + timetable_url
 
-        response = requests.get(full_url)
-        soup = BeautifulSoup(response.text, "html.parser")
+        response_html = self.__get_page(full_url)
+        soup = BeautifulSoup(response_html, "html.parser")
 
         stop_times = []
         for stop_div in soup.find_all("div", class_="bus-stop"):
@@ -190,8 +233,8 @@ class AbstractTransportGraphParser:
 
     def get_stop_coordinates(self, route_url):
         full_url = site_url + route_url + map_url
-        response = requests.get(full_url)
-        soup = BeautifulSoup(response.text, "html.parser")
+        response_html = self.__get_page(full_url)
+        soup = BeautifulSoup(response_html, "html.parser")
 
         script_tags = soup.find_all("script", type="text/javascript")
         script_tag = None
@@ -240,9 +283,8 @@ class AbstractTransportGraphParser:
 
     def parse_all_city_urls(self):
         url = "https://kudikina.ru/"
-        response = requests.get(url)
+        html_content = self.__get_page(url)
 
-        html_content = response.text
         soup = BeautifulSoup(html_content, "html.parser")
         cities = {}
 
@@ -250,8 +292,7 @@ class AbstractTransportGraphParser:
             for region in li.find_all("a"):
                 region_name = region.find("span", class_="city-name").text.strip()
                 region_href = region["href"]
-                region_response = requests.get(url[:-1] + region_href)
-                region_html_content = region_response.text
+                region_html_content = self.__get_page(url[:-1] + region_href)
                 region_soup = BeautifulSoup(region_html_content, "html.parser")
                 city_list = region_soup.find_all("ul", class_="list-unstyled cities")
 
