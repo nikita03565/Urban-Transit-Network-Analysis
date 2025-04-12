@@ -226,6 +226,33 @@ class AbstractTransportGraphParser:
             stop_times.append({"stopName": clean_name, "timePoint": parsed_time_point})
         return stop_times, True
 
+    def get_route(self, route_url):
+        full_url = site_url + route_url + map_url
+        response_html = self.__get_page(full_url)
+        soup = BeautifulSoup(response_html, "html.parser")
+
+        script_tags = soup.find_all("script", type="text/javascript")
+        script_tag = None
+        for tag in script_tags:
+            if "drawMap" in tag.text:
+                script_tag = tag
+                break
+
+        if script_tag is None:
+            print("No script tag found with drawMap")
+            return []
+        script_text = script_tag.text.strip().removeprefix("drawMap(").removesuffix(");")
+        regexp = r"\[\[.*\]\]"
+        match = re.search(regexp, script_text)
+        if match:
+            script_text = match.group(0)
+        else:
+            print("No match found in script text")
+            return []
+
+        coords = json.loads(script_text)
+        return coords[0]
+
     def get_stop_coordinates(self, route_url):
         full_url = site_url + route_url + map_url
         response_html = self.__get_page(full_url)
