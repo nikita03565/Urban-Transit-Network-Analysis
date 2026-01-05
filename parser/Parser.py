@@ -51,6 +51,7 @@ class AbstractTransportGraphParser:
     def __get_page(self, url):
         hash_url = hashlib.md5(url.encode()).hexdigest()
         cache_file = os.path.join(cache_dir, f"{hash_url}.html")
+        os.makedirs(cache_dir, exist_ok=True)
         if os.path.exists(cache_file):
             modification_time = os.path.getmtime(cache_file)
             current_time = datetime.datetime.now()
@@ -70,13 +71,13 @@ class AbstractTransportGraphParser:
 
     def __init__(self, city_name):
         self.city_name = city_name
+        self.session = requests.Session()
+        self.session.headers.update(self.__get_headers())
         self.city_url = self.__get_city_url()
         self.nodes = {}
         self.relationships = []
         self.transport_url = self.get_transport_url()
         self.transport_class = self.get_transport_class()
-        self.session = requests.Session()
-        self.session.headers.update(self.__get_headers())
 
     def __get_headers(self):
         return self.__headers
@@ -241,8 +242,8 @@ class AbstractTransportGraphParser:
         if script_tag is None:
             print("No script tag found with drawMap")
             return []
-        script_text = script_tag.text.strip().removeprefix("drawMap(").removesuffix(");")
-        regexp = r"\[\[.*\]\]"
+        script_text = script_tag.text.strip().removeprefix("drawMap(\n").removesuffix(");")
+        regexp = r'{\"1\":\[\[.*\]\]\}'
         match = re.search(regexp, script_text)
         if match:
             script_text = match.group(0)
@@ -251,7 +252,7 @@ class AbstractTransportGraphParser:
             return []
 
         coords = json.loads(script_text)
-        return coords[0]
+        return coords["1"]
 
     def get_stop_coordinates(self, route_url):
         full_url = site_url + route_url + map_url
