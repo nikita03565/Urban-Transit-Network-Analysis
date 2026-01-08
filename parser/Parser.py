@@ -243,7 +243,7 @@ class AbstractTransportGraphParser:
             print("No script tag found with drawMap")
             return []
         script_text = script_tag.text.strip().removeprefix("drawMap(\n").removesuffix(");")
-        regexp = r'{\"1\":\[\[.*\]\]\}'
+        regexp = r"{\"1\":\[\[.*\]\]\}"
         match = re.search(regexp, script_text)
         if match:
             script_text = match.group(0)
@@ -278,7 +278,7 @@ class AbstractTransportGraphParser:
         return coordinates
 
     def extract_coordinates(self, script_text):
-        regexp = r'\[\{.*\}\]'
+        regexp = r"\[\{.*\}\]"
         match = re.search(regexp, script_text)
         if match:
             script_text = match.group(0)
