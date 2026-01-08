@@ -22,6 +22,31 @@ from shapely.strtree import STRtree
 from shapely.geometry import LineString
 import math
 
+from pyproj import Proj, Transformer
+from shapely import Polygon
+from shapely.ops import transform
+
+
+mercator = "EPSG:3857"
+wgs = "EPSG:4326"
+mercator_proj = Proj(mercator)
+wgs_proj = Proj(wgs)
+
+wgs_to_mercator = Transformer.from_proj(wgs_proj, mercator_proj, always_xy=True)
+mercator_to_wgs = Transformer.from_proj(mercator_proj, wgs_proj)
+
+
+def convert_latlon(coords):
+    transformer = wgs_to_mercator
+    result = transformer.transform(coords["lon"], coords["lat"])
+    return result
+
+
+def convert_mercator(coords):
+    transformer = mercator_to_wgs
+    result = transformer.transform(coords["x"], coords["y"])
+    return result
+
 
 def calc_angle_dot_product(a: npt.NDArray, b: npt.NDArray) -> float:
     """
