@@ -111,7 +111,7 @@ class AbstractTransportGraphParser:
         if not successes_parse:
             return
 
-        stop_coordinates = self.get_stop_coordinates(route_url)
+        stop_coordinates = self.get_stops(route_url)
         last_coordinate = Coordinate(city_avg_x_coordinate, city_avg_y_coordinate)
         previous_transport_stop_name = None
         previous_time_point = None
@@ -252,9 +252,10 @@ class AbstractTransportGraphParser:
             return []
 
         coords = json.loads(script_text)
-        return coords["1"]
+        coords_list = [c for c in coords.values()]
+        return coords_list
 
-    def get_stop_coordinates(self, route_url):
+    def get_stops(self, route_url):
         full_url = site_url + route_url + map_url
         response_html = self.__get_page(full_url)
         soup = BeautifulSoup(response_html, "html.parser")
@@ -277,18 +278,16 @@ class AbstractTransportGraphParser:
         return coordinates
 
     def extract_coordinates(self, script_text):
-        # TODO: that json which we can parse..
-        matches = re.findall(r'{"name":\s*"(.*?)",\s*"lat":\s*(-?\d+\.?\d*),?\s*"long":\s*(-?\d+\.?\d*)?}', script_text)
+        regexp = r'\[\{.*\}\]'
+        match = re.search(regexp, script_text)
+        if match:
+            script_text = match.group(0)
+        else:
+            print("No match found in script text")
+            return []
 
-        coordinates = {}
-        for match in matches:
-            name = match[0].replace("\\", "")
-            # `match` contains latitude and longitude which equals to y and x coordinates
-            x = float(match[2])
-            y = float(match[1])
-            coordinates[name] = Coordinate(x, y)
-
-        return coordinates
+        coords = json.loads(script_text)
+        return coords
 
     def load_cache(self, cache_file):
         if os.path.exists(cache_file):
