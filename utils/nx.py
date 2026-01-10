@@ -57,19 +57,19 @@ def calc_angle_dot_product(a: npt.NDArray, b: npt.NDArray) -> float:
     return np.dot(a, b)
 
 
-def snap_to_edges(edg, r_tree, route_series, buf_tol=20):
+def snap_to_edges(edg, r_tree, route_series, buf_tol=10, cos_tol=0.75):
     matched_edges = []
     for i in range(len(route_series) - 1):
         pt1 = route_series.iloc[i]
         pt2 = route_series.iloc[i + 1]
         route_part = LineString([pt1, pt2])
-        match = snap_point_to_best_edge(edg, r_tree, route_part, buf_tol)
+        match = snap_point_to_best_edge(edg, r_tree, route_part, buf_tol, cos_tol)
         if match is not None:
             matched_edges.append(match.name)
     return matched_edges
 
 
-def snap_point_to_best_edge(gr_edges, idxtree, route_part, distance_tol=20):
+def snap_point_to_best_edge(gr_edges, idxtree, route_part, distance_tol, cos_tol):
 
     edge_idx = idxtree.query(route_part.buffer(distance_tol))
     edge_candidates = gr_edges.iloc[edge_idx].index.to_numpy()
@@ -79,12 +79,11 @@ def snap_point_to_best_edge(gr_edges, idxtree, route_part, distance_tol=20):
     for u, v, key in edge_candidates:
         edge = gr_edges.loc[(u, v, key)]
         edge_geom = edge["geometry"]
-        edge_geom = LineString(edge_geom)
 
         # calc angle bween route and edge as angle between two vectors using dot product
         dot_prod = calc_angle_dot_product(
-            np.array(route_part.coords[0]) - np.array(route_part.coords[1]),
-            np.array(edge_geom.coords[0]) - np.array(edge_geom.coords[1]),
+            np.array(route_part.coords[0]) - np.array(route_part.coords[-1]),
+            np.array(edge_geom.coords[0]) - np.array(edge_geom.coords[-1]),
         )
         # find best dot product
         if best_match is None or dot_prod > best_match[0]:
@@ -92,7 +91,7 @@ def snap_point_to_best_edge(gr_edges, idxtree, route_part, distance_tol=20):
 
     if not best_match:
         return None
-    if best_match[0] < 0.5:
+    if best_match[0] < cos_tol:
         return None
     return best_match[1]
 
